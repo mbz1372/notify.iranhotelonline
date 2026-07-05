@@ -1,39 +1,10 @@
 let hotels = [];
+let templates = [];
+let defaultTemplates = [];
 let selectedHotel = null;
+let editingTemplateId = null;
 
-const templates = [
-  {
-    id: 'capacity',
-    title: 'درخواست آپدیت ظرفیت',
-    text: 'همکار گرامی {hotel}\nبا سلام و احترام، لطفاً ظرفیت اتاق‌های مجموعه را در پنل ایران‌هتل به‌روزرسانی بفرمایید تا فروش شما بدون وقفه ادامه داشته باشد.\nسپاسگزاریم - تیم تأمین ایران‌هتل'
-  },
-  {
-    id: 'price',
-    title: 'درخواست اصلاح قیمت',
-    text: 'همکار گرامی {hotel}\nلطفاً قیمت‌های مجموعه را بررسی و در صورت نیاز اصلاح بفرمایید. به‌روزرسانی قیمت باعث افزایش شانس فروش و نمایش بهتر در ایران‌هتل می‌شود.\nبا تشکر - تیم تأمین ایران‌هتل'
-  },
-  {
-    id: 'peak',
-    title: 'فروش در پیک تایم',
-    text: 'همکار گرامی {hotel}\nبا توجه به افزایش تقاضا، لطفاً ظرفیت‌های باقی‌مانده را باز بفرمایید تا مجموعه شما در صدر نتایج ایران‌هتل فروش بیشتری دریافت کند.\nتیم تأمین ایران‌هتل'
-  },
-  {
-    id: 'contract',
-    title: 'پیگیری قرارداد',
-    text: 'همکار گرامی {hotel}\nبا سلام، جهت تکمیل/تمدید همکاری با ایران‌هتل لطفاً وضعیت قرارداد مجموعه را پیگیری بفرمایید.\nسپاسگزاریم - تیم تأمین ایران‌هتل'
-  },
-  {
-    id: 'panelInfo',
-    title: 'ارسال اطلاعات پنل',
-    text: 'همکار گرامی {hotel}\n\nاطلاعات ورود به پنل هوشمند ایران‌هتل برای مجموعه شما به شرح زیر است:\n\nنام کاربری: {username}\nرمز عبور: {password}\n\nآدرس پنل:\nhttps://ihopannel.ir/\n\nلطفاً پس از ورود، نسبت به بررسی و به‌روزرسانی ظرفیت‌ها، نرخ‌ها و اطلاعات مجموعه اقدام فرمایید.\n\nدر صورت نیاز به راهنمایی، کارشناسان تیم تأمین ایران‌هتل همراه شما هستند.\n\nبا سپاس\nتیم تأمین ایران‌هتل'
-  },
-  {
-    id: 'panel',
-    title: 'فعال‌سازی پنل آی‌هتل',
-    text: 'همکار گرامی {hotel}\nبرای مدیریت سریع‌تر ظرفیت، قیمت و فروش، لطفاً پنل آی‌هتل مجموعه را فعال و به‌روزرسانی بفرمایید.\nتیم تأمین ایران‌هتل'
-  }
-];
-
+const STORAGE_KEY = 'ihoNotifyTemplatesV05';
 const $ = (id) => document.getElementById(id);
 
 function toEnglishDigits(value) {
@@ -50,7 +21,9 @@ function normalizeMobile(value) {
     .filter(Boolean);
   let mobile = nums.find(x => /^09\d{9}$/.test(x));
   if (!mobile) mobile = nums.find(x => /^9\d{9}$/.test(x));
+  if (!mobile) mobile = nums.find(x => /^989\d{9}$/.test(x));
   if (mobile && mobile.length === 10 && mobile.startsWith('9')) mobile = '0' + mobile;
+  if (mobile && mobile.startsWith('989')) mobile = '0' + mobile.slice(2);
   return mobile || '';
 }
 
@@ -74,7 +47,8 @@ function extractMobiles(value) {
 function getHotelMobiles(h) {
   const items = [
     ...extractMobiles(h.reservePhone).map(m => ({ mobile: m, source: 'تلفن رزرو' })),
-    ...extractMobiles(h.hotelPhone).map(m => ({ mobile: m, source: 'تلفن هتل' }))
+    ...extractMobiles(h.hotelPhone).map(m => ({ mobile: m, source: 'تلفن هتل' })),
+    ...extractMobiles(h.mobile).map(m => ({ mobile: m, source: 'موبایل' }))
   ];
   const seen = new Set();
   return items.filter(item => {
@@ -84,15 +58,66 @@ function getHotelMobiles(h) {
   });
 }
 
+function saveTemplatesToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+}
+
+function loadTemplatesFromStorage() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function refreshTemplateSelects(keepSelected = true) {
+  const current = keepSelected ? $('templateSelect')?.value : '';
+  $('templateSelect').innerHTML = templates.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
+  if (current && templates.some(t => t.id === current)) $('templateSelect').value = current;
+
+  $('manageTemplateSelect').innerHTML = templates.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
+  if (editingTemplateId && templates.some(t => t.id === editingTemplateId)) $('manageTemplateSelect').value = editingTemplateId;
+  else editingTemplateId = templates[0]?.id || null;
+  if (editingTemplateId) $('manageTemplateSelect').value = editingTemplateId;
+}
+
+function needsCredentials(tpl) {
+  return /\{username\}|\{password\}/.test(tpl?.text || '') || tpl?.id === 'panelInfo';
+}
+
+function applyTemplate() {
+  const tpl = templates.find(t => t.id === $('templateSelect').value) || templates[0];
+  if (!tpl) return;
+  const hotelName = selectedHotel?.name || 'نام هتل';
+  const username = $('panelUsername')?.value?.trim() || '---';
+  const password = $('panelPassword')?.value?.trim() || '---';
+  const mobile = normalizeMobile($('mobile')?.value || '') || '---';
+
+  if ($('panelCredentialsBox')) {
+    $('panelCredentialsBox').style.display = needsCredentials(tpl) ? 'grid' : 'none';
+  }
+
+  $('message').value = tpl.text
+    .replaceAll('{hotel}', hotelName)
+    .replaceAll('{city}', selectedHotel?.city || '---')
+    .replaceAll('{hotelCode}', selectedHotel?.hotelCode || '---')
+    .replaceAll('{mobile}', mobile)
+    .replaceAll('{username}', username)
+    .replaceAll('{password}', password);
+}
+
 function renderMobileOptions(h) {
   const select = $('mobileSelect');
-  if (!select) return;
   const mobiles = getHotelMobiles(h);
   select.innerHTML = '';
 
   if (!mobiles.length) {
     select.innerHTML = '<option value="">شماره موبایلی برای این هتل پیدا نشد؛ دستی وارد کنید</option>';
     $('mobile').value = '';
+    applyTemplate();
     return;
   }
 
@@ -103,23 +128,7 @@ function renderMobileOptions(h) {
   ].join('');
   select.value = mobiles[0].mobile;
   $('mobile').value = mobiles[0].mobile;
-}
-
-function applyTemplate() {
-  const tpl = templates.find(t => t.id === $('templateSelect').value) || templates[0];
-  const hotelName = selectedHotel?.name || 'نام هتل';
-  const username = $('panelUsername')?.value?.trim() || '---';
-  const password = $('panelPassword')?.value?.trim() || '---';
-  const isPanelInfo = tpl.id === 'panelInfo';
-
-  if ($('panelCredentialsBox')) {
-    $('panelCredentialsBox').style.display = isPanelInfo ? 'grid' : 'none';
-  }
-
-  $('message').value = tpl.text
-    .replaceAll('{hotel}', hotelName)
-    .replaceAll('{username}', username)
-    .replaceAll('{password}', password);
+  applyTemplate();
 }
 
 function renderHotels() {
@@ -131,7 +140,7 @@ function renderHotels() {
     return (!city || h.city === city) && (!q || hay.includes(q));
   }).slice(0, 120);
 
-  list.innerHTML = filtered.map((h, i) => `
+  list.innerHTML = filtered.map(h => `
     <div class="hotel-item ${selectedHotel?.hotelCode === h.hotelCode ? 'active' : ''}" data-index="${hotels.indexOf(h)}">
       <div class="hotel-name">${h.name || '-'}</div>
       <div class="hotel-meta">
@@ -153,12 +162,12 @@ function selectHotel(h) {
   $('selectedHotel').classList.remove('empty');
   $('selectedHotel').innerHTML = `<b>${h.name}</b><br>شهر: ${h.city || '-'} | کد هتل: ${h.hotelCode || '-'}<br>تلفن رزرو: ${h.reservePhone || '-'}<br>تلفن هتل: ${h.hotelPhone || '-'}`;
   renderMobileOptions(h);
-  applyTemplate();
   renderHotels();
 }
 
-function setStatus(text, ok = true) {
-  const s = $('status');
+function setStatus(text, ok = true, target = 'status') {
+  const s = $(target);
+  if (!s) return;
   s.textContent = text;
   s.className = `status ${ok ? 'ok' : 'err'}`;
 }
@@ -172,7 +181,7 @@ function addLog(channel, result) {
     channel,
     result
   });
-  localStorage.setItem('notifyLogs', JSON.stringify(logs.slice(0, 50)));
+  localStorage.setItem('notifyLogs', JSON.stringify(logs.slice(0, 80)));
   renderLogs();
 }
 
@@ -185,9 +194,7 @@ function openDeepLink(appUrl, fallbackUrl) {
   const openedAt = Date.now();
   window.location.href = appUrl;
   setTimeout(() => {
-    if (Date.now() - openedAt < 1800 && fallbackUrl) {
-      window.open(fallbackUrl, '_blank');
-    }
+    if (Date.now() - openedAt < 1800 && fallbackUrl) window.open(fallbackUrl, '_blank');
   }, 1200);
 }
 
@@ -195,7 +202,8 @@ function openChannel(kind) {
   const mobile = normalizeMobile($('mobile').value);
   const rawMessage = $('message').value.trim();
   const msg = encodeURIComponent(rawMessage);
-  if (!mobile || !msg) return setStatus('شماره موبایل یا متن پیام کامل نیست.', false);
+  if (!rawMessage) return setStatus('متن پیام کامل نیست.', false);
+  if (kind === 'whatsapp' && !mobile) return setStatus('برای واتساپ شماره موبایل لازم است.', false);
 
   navigator.clipboard?.writeText(rawMessage).catch(() => {});
 
@@ -235,30 +243,133 @@ async function sendSms() {
   }
 }
 
+function showTab(panelId) {
+  document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === panelId));
+  document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === panelId));
+}
+
+function loadTemplateEditor(id) {
+  editingTemplateId = id || $('manageTemplateSelect').value || templates[0]?.id;
+  const tpl = templates.find(t => t.id === editingTemplateId);
+  if (!tpl) return;
+  $('manageTemplateSelect').value = tpl.id;
+  $('manageTemplateTitle').value = tpl.title;
+  $('manageTemplateText').value = tpl.text;
+  setStatus('', true, 'templateStatus');
+}
+
+function makeId(title) {
+  const base = toEnglishDigits(title || 'template').replace(/[^a-zA-Z0-9آ-ی]+/g, '-').replace(/^-|-$/g, '') || 'template';
+  let id = base;
+  let i = 2;
+  while (templates.some(t => t.id === id)) id = `${base}-${i++}`;
+  return id;
+}
+
+function saveCurrentTemplate() {
+  const title = $('manageTemplateTitle').value.trim();
+  const text = $('manageTemplateText').value.trim();
+  if (!title || !text) return setStatus('عنوان و متن قالب نباید خالی باشد.', false, 'templateStatus');
+
+  let tpl = templates.find(t => t.id === editingTemplateId);
+  if (!tpl) {
+    tpl = { id: makeId(title), title, text };
+    templates.push(tpl);
+    editingTemplateId = tpl.id;
+  } else {
+    tpl.title = title;
+    tpl.text = text;
+  }
+  saveTemplatesToStorage();
+  refreshTemplateSelects();
+  loadTemplateEditor(editingTemplateId);
+  applyTemplate();
+  setStatus('قالب ذخیره شد.', true, 'templateStatus');
+}
+
+function newTemplate() {
+  const tpl = { id: makeId('new-template'), title: 'قالب جدید', text: 'همکار گرامی {hotel}\nمتن پیام را اینجا بنویسید.\n\nتیم تأمین ایران‌هتل' };
+  templates.push(tpl);
+  editingTemplateId = tpl.id;
+  saveTemplatesToStorage();
+  refreshTemplateSelects(false);
+  loadTemplateEditor(tpl.id);
+  setStatus('قالب جدید ساخته شد. متن را ویرایش و ذخیره کنید.', true, 'templateStatus');
+}
+
+function deleteCurrentTemplate() {
+  if (templates.length <= 1) return setStatus('حداقل یک قالب باید باقی بماند.', false, 'templateStatus');
+  const tpl = templates.find(t => t.id === editingTemplateId);
+  if (!tpl) return;
+  if (!confirm(`قالب «${tpl.title}» حذف شود؟`)) return;
+  templates = templates.filter(t => t.id !== editingTemplateId);
+  editingTemplateId = templates[0]?.id;
+  saveTemplatesToStorage();
+  refreshTemplateSelects(false);
+  loadTemplateEditor(editingTemplateId);
+  applyTemplate();
+  setStatus('قالب حذف شد.', true, 'templateStatus');
+}
+
+function resetTemplates() {
+  if (!confirm('همه تغییرات قالب‌ها حذف و قالب‌های اولیه برگردانده شود؟')) return;
+  templates = JSON.parse(JSON.stringify(defaultTemplates));
+  editingTemplateId = templates[0]?.id;
+  localStorage.removeItem(STORAGE_KEY);
+  refreshTemplateSelects(false);
+  loadTemplateEditor(editingTemplateId);
+  applyTemplate();
+  setStatus('قالب‌ها بازنشانی شدند.', true, 'templateStatus');
+}
+
 async function init() {
-  $('templateSelect').innerHTML = templates.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
-  const res = await fetch('./data/hotels.json');
-  hotels = await res.json();
+  const [hotelRes, templateRes] = await Promise.all([
+    fetch('./data/hotels.json'),
+    fetch('./data/templates.json')
+  ]);
+  hotels = await hotelRes.json();
+  defaultTemplates = await templateRes.json();
+  templates = loadTemplatesFromStorage() || JSON.parse(JSON.stringify(defaultTemplates));
+  editingTemplateId = templates[0]?.id;
+
   $('hotelCount').textContent = hotels.length.toLocaleString('fa-IR');
   const cities = [...new Set(hotels.map(h => h.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fa'));
   $('cityFilter').innerHTML += cities.map(c => `<option value="${c}">${c}</option>`).join('');
-  renderHotels(); renderLogs(); applyTemplate();
+
+  refreshTemplateSelects(false);
+  loadTemplateEditor(editingTemplateId);
+  renderHotels();
+  renderLogs();
+  applyTemplate();
 }
 
+// events
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
 $('search').addEventListener('input', renderHotels);
 $('cityFilter').addEventListener('change', () => { $('selectedCity').textContent = $('cityFilter').value || 'همه شهرها'; renderHotels(); });
 $('clearBtn').addEventListener('click', () => { $('search').value=''; $('cityFilter').value=''; $('selectedCity').textContent='همه شهرها'; renderHotels(); });
 $('templateSelect').addEventListener('change', applyTemplate);
 $('panelUsername')?.addEventListener('input', applyTemplate);
 $('panelPassword')?.addEventListener('input', applyTemplate);
+$('mobile')?.addEventListener('input', applyTemplate);
 $('mobileSelect').addEventListener('change', () => {
   const value = $('mobileSelect').value;
   if (value && value !== 'manual') $('mobile').value = value;
   if (value === 'manual') $('mobile').focus();
+  applyTemplate();
 });
 $('sendSms').addEventListener('click', sendSms);
 $('copyText').addEventListener('click', async () => { await navigator.clipboard.writeText($('message').value); setStatus('متن پیام کپی شد.'); addLog('Copy', 'کپی متن'); });
 $('whatsappBtn').addEventListener('click', () => openChannel('whatsapp'));
 $('telegramBtn').addEventListener('click', () => openChannel('telegram'));
 $('baleBtn').addEventListener('click', () => openChannel('bale'));
-init();
+$('manageTemplateSelect').addEventListener('change', () => loadTemplateEditor($('manageTemplateSelect').value));
+$('newTemplate').addEventListener('click', newTemplate);
+$('saveTemplate').addEventListener('click', saveCurrentTemplate);
+$('deleteTemplate').addEventListener('click', deleteCurrentTemplate);
+$('resetTemplates').addEventListener('click', resetTemplates);
+
+init().catch(err => {
+  console.error(err);
+  setStatus('خطا در بارگذاری اطلاعات. فایل hotels.json یا templates.json را بررسی کنید.', false);
+});

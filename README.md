@@ -1,26 +1,32 @@
-# Hotel Notify - IranHotel
+# IranHotel Notify V0.5
 
-نسخه ساده و بدون دیتابیس برای تست روی Vercel.
+نسخه سبک اطلاع‌رسانی هتل‌ها برای Vercel.
 
 ## امکانات
-- جستجو بین ۹۱۳۰ هتل از فایل `all hotel Data.xlsx`
-- انتخاب قالب پیام آماده
-- ارسال پیامک با SMS.ir از طریق Serverless Function
-- لینک سریع واتساپ، تلگرام و بله
-- ذخیره تاریخچه ارسال در مرورگر کارشناس
+- جستجوی هتل‌ها از `data/hotels.json`
+- انتخاب شماره موبایل هتل یا ورود دستی شماره
+- ارسال پیامک با SMS.ir از طریق API Route
+- قالب «ارسال اطلاعات پنل» با فیلد نام کاربری و رمز عبور
+- مدیریت قالب‌ها از داخل خود پنل
+- متغیرهای قالب: `{hotel}` `{city}` `{hotelCode}` `{mobile}` `{username}` `{password}`
+- باز کردن واتساپ، تلگرام و بله با Deep Link و کپی خودکار متن
+- تاریخچه ارسال در LocalStorage مرورگر
 
-## راه‌اندازی روی Vercel
-1. این پوشه را در GitHub آپلود کنید یا ZIP را مستقیم در Vercel Import کنید.
-2. در تنظیمات پروژه Vercel، این Environment Variableها را اضافه کنید:
-   - `SMSIR_API_KEY`
-   - `SMSIR_LINE_NUMBER`
-3. Deploy بزنید.
+## تنظیمات Vercel
+در Project > Settings > Environment Variables این دو مقدار را ثبت کنید:
 
-## تست لوکال
-```bash
-npm i -g vercel
-vercel dev
+```env
+SMSIR_API_KEY=your-api-key
+SMSIR_LINE_NUMBER=3000400705
 ```
 
-## نکته امنیتی
-کلید SMS.ir داخل فرانت‌اند قرار نگرفته و فقط در API سمت Vercel استفاده می‌شود.
+بعد از ثبت، Redeploy بزنید.
+
+## تغییر قالب‌های پیش‌فرض
+قالب‌های اولیه داخل این فایل هستند:
+
+```txt
+data/templates.json
+```
+
+اما در نسخه V0.5 از داخل خود سایت هم می‌توانید قالب‌ها را بسازید، ویرایش کنید، حذف کنید یا ریست کنید.
