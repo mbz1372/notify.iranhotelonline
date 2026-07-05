@@ -45,6 +45,17 @@
         <label>قالب پیام</label>
         <select id="templateSelect"></select>
 
+        <div id="panelCredentialsBox" class="credentials-box" style="display:none">
+          <div>
+            <label>نام کاربری پنل آی‌هتل</label>
+            <input id="panelUsername" placeholder="مثلاً hotel_user" autocomplete="off" />
+          </div>
+          <div>
+            <label>رمز عبور پنل آی‌هتل</label>
+            <input id="panelPassword" placeholder="رمز عبور" autocomplete="off" />
+          </div>
+        </div>
+
         <label>متن پیام</label>
         <textarea id="message" rows="9"></textarea>
 
@@ -57,7 +68,7 @@
 
       <section class="card channel-card">
         <h2>۳. کانال‌های سریع</h2>
-        <p class="hint">واتساپ، تلگرام و بله در نسخه اول به‌صورت لینک/کپی متن هستند تا ریسک بلاک و پیچیدگی API نداشته باشیم.</p>
+        <p class="hint">واتساپ، تلگرام و بله ابتدا تلاش می‌کنند اپلیکیشن را باز کنند و متن هم کپی می‌شود تا ریسک بلاک و پیچیدگی API نداشته باشیم.</p>
         <button id="whatsappBtn" class="channel whatsapp">باز کردن واتساپ</button>
         <button id="telegramBtn" class="channel telegram">باز کردن تلگرام</button>
         <button id="baleBtn" class="channel bale">باز کردن بله</button>

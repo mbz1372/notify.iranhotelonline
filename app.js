@@ -23,6 +23,11 @@ const templates = [
     text: 'همکار گرامی {hotel}\nبا سلام، جهت تکمیل/تمدید همکاری با ایران‌هتل لطفاً وضعیت قرارداد مجموعه را پیگیری بفرمایید.\nسپاسگزاریم - تیم تأمین ایران‌هتل'
   },
   {
+    id: 'panelInfo',
+    title: 'ارسال اطلاعات پنل',
+    text: 'همکار گرامی {hotel}\n\nاطلاعات ورود به پنل هوشمند ایران‌هتل برای مجموعه شما به شرح زیر است:\n\nنام کاربری: {username}\nرمز عبور: {password}\n\nآدرس پنل:\nhttps://ihopannel.ir/\n\nلطفاً پس از ورود، نسبت به بررسی و به‌روزرسانی ظرفیت‌ها، نرخ‌ها و اطلاعات مجموعه اقدام فرمایید.\n\nدر صورت نیاز به راهنمایی، کارشناسان تیم تأمین ایران‌هتل همراه شما هستند.\n\nبا سپاس\nتیم تأمین ایران‌هتل'
+  },
+  {
     id: 'panel',
     title: 'فعال‌سازی پنل آی‌هتل',
     text: 'همکار گرامی {hotel}\nبرای مدیریت سریع‌تر ظرفیت، قیمت و فروش، لطفاً پنل آی‌هتل مجموعه را فعال و به‌روزرسانی بفرمایید.\nتیم تأمین ایران‌هتل'
@@ -103,7 +108,18 @@ function renderMobileOptions(h) {
 function applyTemplate() {
   const tpl = templates.find(t => t.id === $('templateSelect').value) || templates[0];
   const hotelName = selectedHotel?.name || 'نام هتل';
-  $('message').value = tpl.text.replaceAll('{hotel}', hotelName);
+  const username = $('panelUsername')?.value?.trim() || '---';
+  const password = $('panelPassword')?.value?.trim() || '---';
+  const isPanelInfo = tpl.id === 'panelInfo';
+
+  if ($('panelCredentialsBox')) {
+    $('panelCredentialsBox').style.display = isPanelInfo ? 'grid' : 'none';
+  }
+
+  $('message').value = tpl.text
+    .replaceAll('{hotel}', hotelName)
+    .replaceAll('{username}', username)
+    .replaceAll('{password}', password);
 }
 
 function renderHotels() {
@@ -165,14 +181,34 @@ function renderLogs() {
   $('logList').innerHTML = logs.map(l => `<div class="log"><b>${l.channel}</b> - ${l.result}<br>${l.hotel} | ${l.mobile}<br>${l.at}</div>`).join('') || '<div class="selected empty">هنوز لاگی ثبت نشده.</div>';
 }
 
+function openDeepLink(appUrl, fallbackUrl) {
+  const openedAt = Date.now();
+  window.location.href = appUrl;
+  setTimeout(() => {
+    if (Date.now() - openedAt < 1800 && fallbackUrl) {
+      window.open(fallbackUrl, '_blank');
+    }
+  }, 1200);
+}
+
 function openChannel(kind) {
   const mobile = normalizeMobile($('mobile').value);
-  const msg = encodeURIComponent($('message').value.trim());
+  const rawMessage = $('message').value.trim();
+  const msg = encodeURIComponent(rawMessage);
   if (!mobile || !msg) return setStatus('شماره موبایل یا متن پیام کامل نیست.', false);
-  if (kind === 'whatsapp') window.open(`https://wa.me/98${mobile.slice(1)}?text=${msg}`, '_blank');
-  if (kind === 'telegram') window.open(`https://t.me/share/url?url=&text=${msg}`, '_blank');
-  if (kind === 'bale') window.open(`https://ble.ir/share/url?url=&text=${msg}`, '_blank');
-  addLog(kind, 'لینک باز شد');
+
+  navigator.clipboard?.writeText(rawMessage).catch(() => {});
+
+  if (kind === 'whatsapp') {
+    openDeepLink(`whatsapp://send?phone=98${mobile.slice(1)}&text=${msg}`, `https://wa.me/98${mobile.slice(1)}?text=${msg}`);
+  }
+  if (kind === 'telegram') {
+    openDeepLink(`tg://msg?text=${msg}`, `https://t.me/share/url?url=&text=${msg}`);
+  }
+  if (kind === 'bale') {
+    openDeepLink(`bale://share?text=${msg}`, `https://ble.ir/share/url?url=&text=${msg}`);
+  }
+  addLog(kind, 'اپلیکیشن باز شد / متن کپی شد');
 }
 
 async function sendSms() {
@@ -213,6 +249,8 @@ $('search').addEventListener('input', renderHotels);
 $('cityFilter').addEventListener('change', () => { $('selectedCity').textContent = $('cityFilter').value || 'همه شهرها'; renderHotels(); });
 $('clearBtn').addEventListener('click', () => { $('search').value=''; $('cityFilter').value=''; $('selectedCity').textContent='همه شهرها'; renderHotels(); });
 $('templateSelect').addEventListener('change', applyTemplate);
+$('panelUsername')?.addEventListener('input', applyTemplate);
+$('panelPassword')?.addEventListener('input', applyTemplate);
 $('mobileSelect').addEventListener('change', () => {
   const value = $('mobileSelect').value;
   if (value && value !== 'manual') $('mobile').value = value;
