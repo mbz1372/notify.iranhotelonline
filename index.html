@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hotel Notify | ایران‌هتل</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div>
+        <span class="eyebrow">IranHotel Supply Tools</span>
+        <h1>سامانه ساده اطلاع‌رسانی هتل‌ها</h1>
+        <p>انتخاب هتل، انتخاب قالب پیام، ارسال پیامک یا آماده‌سازی پیام برای واتساپ، تلگرام و بله.</p>
+      </div>
+      <div class="stats">
+        <div><b id="hotelCount">...</b><span>هتل</span></div>
+        <div><b id="selectedCity">همه شهرها</b><span>فیلتر فعلی</span></div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card search-card">
+        <h2>۱. انتخاب هتل</h2>
+        <label>جستجو نام هتل / شهر / کد</label>
+        <input id="search" placeholder="مثلاً پردیسان، مشهد، 2" autocomplete="off" />
+        <div class="filters">
+          <select id="cityFilter"><option value="">همه شهرها</option></select>
+          <button id="clearBtn" class="ghost">پاک کردن</button>
+        </div>
+        <div id="hotelList" class="hotel-list"></div>
+      </section>
+
+      <section class="card compose-card">
+        <h2>۲. پیام</h2>
+        <div id="selectedHotel" class="selected empty">هنوز هتلی انتخاب نشده است.</div>
+
+        <label>شماره موبایل مقصد</label>
+        <input id="mobile" placeholder="09xxxxxxxxx" />
+
+        <label>قالب پیام</label>
+        <select id="templateSelect"></select>
+
+        <label>متن پیام</label>
+        <textarea id="message" rows="9"></textarea>
+
+        <div class="actions">
+          <button id="sendSms" class="primary">ارسال پیامک</button>
+          <button id="copyText">کپی متن</button>
+        </div>
+        <div id="status" class="status"></div>
+      </section>
+
+      <section class="card channel-card">
+        <h2>۳. کانال‌های سریع</h2>
+        <p class="hint">واتساپ، تلگرام و بله در نسخه اول به‌صورت لینک/کپی متن هستند تا ریسک بلاک و پیچیدگی API نداشته باشیم.</p>
+        <button id="whatsappBtn" class="channel whatsapp">باز کردن واتساپ</button>
+        <button id="telegramBtn" class="channel telegram">باز کردن تلگرام</button>
+        <button id="baleBtn" class="channel bale">باز کردن بله</button>
+        <hr />
+        <h3>تاریخچه همین مرورگر</h3>
+        <div id="logList" class="logs"></div>
+      </section>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>

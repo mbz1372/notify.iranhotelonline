@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/send-sms.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
