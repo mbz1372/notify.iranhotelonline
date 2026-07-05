@@ -3,120 +3,73 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hotel Notify | ایران‌هتل</title>
+  <title>IranHotel Notify V1 Pro</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="shell">
-    <header class="hero">
-      <div>
-        <span class="eyebrow">IranHotel Supply Tools | V0.5</span>
-        <h1>سامانه ساده اطلاع‌رسانی هتل‌ها</h1>
-        <p>انتخاب هتل، انتخاب شماره، مدیریت قالب‌ها، ارسال پیامک و آماده‌سازی پیام برای واتساپ، تلگرام و بله.</p>
-      </div>
-      <div class="stats">
-        <div><b id="hotelCount">...</b><span>هتل</span></div>
-        <div><b id="selectedCity">همه شهرها</b><span>فیلتر فعلی</span></div>
-      </div>
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">IH</div><div><b>Hotel Notify</b><span>IranHotel Supply Tools</span></div></div>
+    <button class="nav active" data-view="dashboard">داشبورد</button>
+    <button class="nav" data-view="send">ارسال پیام</button>
+    <button class="nav" data-view="templates">مدیریت قالب‌ها</button>
+    <button class="nav" data-view="hotels">مدیریت هتل‌ها</button>
+    <button class="nav" data-view="reports">گزارش ارسال</button>
+    <button class="nav" data-view="settings">راهنما و تنظیمات</button>
+    <div class="version">V1 Pro · No Database</div>
+  </aside>
+
+  <main class="app">
+    <header class="topbar">
+      <div><h1 id="pageTitle">داشبورد</h1><p>ابزار سبک اطلاع‌رسانی تیم تأمین ایران‌هتل</p></div>
+      <div class="quick"><input id="globalSearch" placeholder="جستجوی سریع هتل..."/><button id="quickSend">ارسال سریع</button></div>
     </header>
 
-    <nav class="tabs">
-      <button class="tab active" data-tab="sendPanel">ارسال پیام</button>
-      <button class="tab" data-tab="templatesPanel">مدیریت قالب‌ها</button>
-    </nav>
+    <section id="dashboard" class="view active">
+      <div class="kpis">
+        <div class="kpi"><span>تعداد هتل‌ها</span><b id="kpiHotels">...</b></div>
+        <div class="kpi"><span>قالب‌ها</span><b id="kpiTemplates">...</b></div>
+        <div class="kpi"><span>ارسال‌های امروز</span><b id="kpiToday">0</b></div>
+        <div class="kpi"><span>آخرین کانال</span><b id="kpiLast">-</b></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h2>ارسال سریع</h2><p class="muted">هتل را انتخاب کن، شماره را انتخاب کن، قالب را بزن و پیامک ارسال کن.</p><button class="primary jump" data-target="send">رفتن به ارسال پیام</button></div>
+        <div class="card"><h2>قالب‌های قابل استفاده</h2><div id="templateChips" class="chips"></div></div>
+      </div>
+      <div class="card"><h2>آخرین فعالیت‌ها</h2><div id="recentLogs" class="logList"></div></div>
+    </section>
 
-    <main id="sendPanel" class="tab-panel active grid">
-      <section class="card search-card">
-        <h2>۱. انتخاب هتل</h2>
-        <label>جستجو نام هتل / شهر / کد</label>
-        <input id="search" placeholder="مثلاً پردیسان، مشهد، 2" autocomplete="off" />
-        <div class="filters">
-          <select id="cityFilter"><option value="">همه شهرها</option></select>
-          <button id="clearBtn" class="ghost">پاک کردن</button>
-        </div>
-        <div id="hotelList" class="hotel-list"></div>
-      </section>
+    <section id="send" class="view">
+      <div class="sendGrid">
+        <div class="card"><h2>۱. انتخاب هتل</h2><input id="hotelSearch" placeholder="نام هتل، شهر، کد..."/><div class="row"><select id="cityFilter"><option value="">همه شهرها</option></select><button id="clearHotel" class="ghost">پاک کردن</button></div><div id="hotelList" class="hotelList"></div></div>
+        <div class="card"><h2>۲. ساخت پیام</h2><div id="selectedHotel" class="selected empty">هنوز هتلی انتخاب نشده است.</div><label>شماره‌های هتل</label><select id="mobileSelect"><option>بعد از انتخاب هتل نمایش داده می‌شود</option></select><label>شماره مقصد / دستی</label><input id="mobileInput" inputmode="numeric" placeholder="09xxxxxxxxx"/><label>قالب پیام</label><select id="templateSelect"></select><div id="credentialBox" class="cred hidden"><div><label>نام کاربری آی‌هتل</label><input id="usernameInput" placeholder="username"/></div><div><label>رمز عبور آی‌هتل</label><input id="passwordInput" placeholder="password"/></div></div><label>متن پیام</label><textarea id="messageText" rows="11"></textarea><div class="actions"><button id="sendSms" class="primary">ارسال پیامک</button><button id="copyMsg">کپی متن</button></div><div id="sendStatus" class="status"></div></div>
+        <div class="card"><h2>۳. پیام‌رسان‌ها</h2><p class="muted">متن پیام قبل از باز شدن اپ، خودکار کپی می‌شود.</p><button id="waBtn" class="channel wa">واتساپ</button><button id="tgBtn" class="channel tg">تلگرام</button><button id="baleBtn" class="channel bale">بله</button><hr><h3>متغیرهای سریع</h3><div class="chips vars"><button>{hotel}</button><button>{city}</button><button>{username}</button><button>{password}</button><button>{mobile}</button></div></div>
+      </div>
+    </section>
 
-      <section class="card compose-card">
-        <h2>۲. پیام</h2>
-        <div id="selectedHotel" class="selected empty">هنوز هتلی انتخاب نشده است.</div>
+    <section id="templates" class="view">
+      <div class="grid2 wideLeft">
+        <div class="card"><h2>مدیریت قالب‌ها</h2><div class="actions"><button id="newTemplate" class="primary">قالب جدید</button><button id="saveTemplate">ذخیره</button><button id="deleteTemplate" class="danger">حذف</button><button id="resetTemplates" class="ghost">بازنشانی اولیه</button></div><label>انتخاب قالب</label><select id="editTemplateSelect"></select><label>عنوان قالب</label><input id="editTemplateTitle"/><label>متن قالب</label><textarea id="editTemplateText" rows="14"></textarea><div id="templateStatus" class="status"></div></div>
+        <div class="card"><h2>متغیرها</h2><p class="muted">روی هر متغیر کلیک کن تا داخل متن قالب درج شود.</p><div class="varGrid" id="templateVars"></div><hr><h3>پیشنمایش</h3><pre id="templatePreview"></pre></div>
+      </div>
+    </section>
 
-        <label>انتخاب شماره موبایل هتل</label>
-        <select id="mobileSelect"><option value="">بعد از انتخاب هتل، شماره‌ها نمایش داده می‌شود</option></select>
+    <section id="hotels" class="view">
+      <div class="grid2 wideLeft">
+        <div class="card"><h2>مدیریت هتل‌ها</h2><div class="actions"><button id="newHotel" class="primary">هتل جدید</button><button id="saveHotel">ذخیره هتل</button><button id="deleteHotel" class="danger">حذف</button><button id="exportHotels" class="ghost">خروجی JSON</button></div><label>جستجو برای ویرایش</label><input id="hotelManageSearch" placeholder="نام یا کد هتل"/><div id="hotelManageList" class="hotelList small"></div></div>
+        <div class="card"><h2>فرم هتل</h2><div class="formGrid"><div><label>کد هتل</label><input id="hCode"/></div><div><label>نام هتل</label><input id="hName"/></div><div><label>شهر</label><input id="hCity"/></div><div><label>استان</label><input id="hProvince"/></div><div><label>نوع</label><input id="hType"/></div><div><label>ظرفیت</label><input id="hCapacity"/></div></div><label>تلفن رزرو / موبایل‌ها</label><input id="hReserve" placeholder="شماره‌ها با ; جدا شوند"/><label>تلفن هتل</label><input id="hPhone"/><div id="hotelStatus" class="status"></div></div>
+      </div>
+    </section>
 
-        <label>شماره موبایل مقصد / ورود دستی</label>
-        <input id="mobile" placeholder="09xxxxxxxxx" inputmode="numeric" />
+    <section id="reports" class="view">
+      <div class="card"><h2>گزارش ارسال</h2><div class="actions"><button id="exportLogs" class="primary">خروجی CSV</button><button id="clearLogs" class="danger">پاک کردن لاگ‌ها</button></div><div id="reportsList" class="reportTable"></div></div>
+    </section>
 
-        <label>قالب پیام</label>
-        <select id="templateSelect"></select>
+    <section id="settings" class="view">
+      <div class="card"><h2>راهنمای استقرار</h2><p>در Vercel این دو Environment Variable را برای Production تنظیم کن و بعد Redeploy بزن:</p><pre>SMSIR_API_KEY=...
+SMSIR_LINE_NUMBER=3000400705</pre><p class="muted">اطلاعات قالب‌ها و تغییرات هتل‌ها در مرورگر هر کارشناس ذخیره می‌شود. برای نسخه سازمانی، ذخیره‌سازی مرکزی اضافه می‌کنیم.</p></div>
+    </section>
+  </main>
 
-        <div id="panelCredentialsBox" class="credentials-box" style="display:none">
-          <div>
-            <label>نام کاربری پنل آی‌هتل</label>
-            <input id="panelUsername" placeholder="مثلاً hotel_user" autocomplete="off" />
-          </div>
-          <div>
-            <label>رمز عبور پنل آی‌هتل</label>
-            <input id="panelPassword" placeholder="رمز عبور" autocomplete="off" />
-          </div>
-        </div>
-
-        <label>متن پیام</label>
-        <textarea id="message" rows="9"></textarea>
-
-        <div class="actions">
-          <button id="sendSms" class="primary">ارسال پیامک</button>
-          <button id="copyText">کپی متن</button>
-        </div>
-        <div id="status" class="status"></div>
-      </section>
-
-      <section class="card channel-card">
-        <h2>۳. کانال‌های سریع</h2>
-        <p class="hint">واتساپ، تلگرام و بله ابتدا تلاش می‌کنند اپلیکیشن را باز کنند. متن پیام هم خودکار کپی می‌شود.</p>
-        <button id="whatsappBtn" class="channel whatsapp">باز کردن واتساپ</button>
-        <button id="telegramBtn" class="channel telegram">باز کردن تلگرام</button>
-        <button id="baleBtn" class="channel bale">باز کردن بله</button>
-        <hr />
-        <h3>تاریخچه همین مرورگر</h3>
-        <div id="logList" class="logs"></div>
-      </section>
-    </main>
-
-    <main id="templatesPanel" class="tab-panel template-layout">
-      <section class="card">
-        <h2>مدیریت قالب پیام</h2>
-        <p class="hint">قالب‌ها در مرورگر ذخیره می‌شوند. برای برگشت به حالت اولیه، دکمه بازنشانی را بزن.</p>
-        <div class="template-toolbar">
-          <button id="newTemplate" class="primary">قالب جدید</button>
-          <button id="saveTemplate">ذخیره قالب</button>
-          <button id="deleteTemplate" class="danger">حذف قالب</button>
-          <button id="resetTemplates" class="ghost">بازنشانی قالب‌های اولیه</button>
-        </div>
-        <label>انتخاب قالب برای ویرایش</label>
-        <select id="manageTemplateSelect"></select>
-        <label>عنوان قالب</label>
-        <input id="manageTemplateTitle" placeholder="مثلاً یادآوری آپدیت ظرفیت" />
-        <label>متن قالب</label>
-        <textarea id="manageTemplateText" rows="12" placeholder="متن قالب را بنویس..."></textarea>
-        <div id="templateStatus" class="status"></div>
-      </section>
-
-      <aside class="card variables-card">
-        <h2>متغیرهای قابل استفاده</h2>
-        <p class="hint">این کدها را داخل متن قالب بگذار تا هنگام ارسال خودکار جایگزین شوند.</p>
-        <div class="var-list">
-          <code>{hotel}</code><span>نام هتل</span>
-          <code>{city}</code><span>شهر</span>
-          <code>{hotelCode}</code><span>کد هتل</span>
-          <code>{mobile}</code><span>شماره انتخاب‌شده</span>
-          <code>{username}</code><span>نام کاربری پنل</span>
-          <code>{password}</code><span>رمز عبور پنل</span>
-        </div>
-        <p class="hint">اگر قالب شامل <b>{username}</b> یا <b>{password}</b> باشد، فیلدهای نام کاربری و رمز عبور در صفحه ارسال نمایش داده می‌شوند.</p>
-      </aside>
-    </main>
-  </div>
   <script src="./app.js"></script>
 </body>
 </html>

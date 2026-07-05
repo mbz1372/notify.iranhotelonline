@@ -1,12 +1,1 @@
-{
-  "name": "iran-hotel-notify",
-  "version": "1.0.1",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vercel dev"
-  },
-  "engines": {
-    "node": "20.x"
-  }
-}
+{"name":"iran-hotel-notify-v1-pro","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"vercel dev","start":"vercel dev"},"dependencies":{}}
