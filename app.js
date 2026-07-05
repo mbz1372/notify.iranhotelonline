@@ -31,13 +31,73 @@ const templates = [
 
 const $ = (id) => document.getElementById(id);
 
+function toEnglishDigits(value) {
+  return String(value || '')
+    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+}
+
 function normalizeMobile(value) {
   if (!value) return '';
-  const nums = String(value).split(/[;،,\s]+/).map(x => x.replace(/[^0-9]/g, '')).filter(Boolean);
+  const nums = toEnglishDigits(value)
+    .split(/[;؛،,\s/\-]+/)
+    .map(x => x.replace(/[^0-9]/g, ''))
+    .filter(Boolean);
   let mobile = nums.find(x => /^09\d{9}$/.test(x));
   if (!mobile) mobile = nums.find(x => /^9\d{9}$/.test(x));
   if (mobile && mobile.length === 10 && mobile.startsWith('9')) mobile = '0' + mobile;
   return mobile || '';
+}
+
+function extractMobiles(value) {
+  if (!value) return [];
+  const nums = toEnglishDigits(value)
+    .split(/[;؛،,\s/]+/)
+    .map(x => x.replace(/[^0-9]/g, ''))
+    .filter(Boolean);
+
+  return nums
+    .map(n => {
+      if (/^09\d{9}$/.test(n)) return n;
+      if (/^9\d{9}$/.test(n)) return '0' + n;
+      if (/^989\d{9}$/.test(n)) return '0' + n.slice(2);
+      return '';
+    })
+    .filter(Boolean);
+}
+
+function getHotelMobiles(h) {
+  const items = [
+    ...extractMobiles(h.reservePhone).map(m => ({ mobile: m, source: 'تلفن رزرو' })),
+    ...extractMobiles(h.hotelPhone).map(m => ({ mobile: m, source: 'تلفن هتل' }))
+  ];
+  const seen = new Set();
+  return items.filter(item => {
+    if (seen.has(item.mobile)) return false;
+    seen.add(item.mobile);
+    return true;
+  });
+}
+
+function renderMobileOptions(h) {
+  const select = $('mobileSelect');
+  if (!select) return;
+  const mobiles = getHotelMobiles(h);
+  select.innerHTML = '';
+
+  if (!mobiles.length) {
+    select.innerHTML = '<option value="">شماره موبایلی برای این هتل پیدا نشد؛ دستی وارد کنید</option>';
+    $('mobile').value = '';
+    return;
+  }
+
+  select.innerHTML = [
+    '<option value="">انتخاب شماره از لیست</option>',
+    ...mobiles.map(item => `<option value="${item.mobile}">${item.mobile} - ${item.source}</option>`),
+    '<option value="manual">ورود دستی / شماره دیگر</option>'
+  ].join('');
+  select.value = mobiles[0].mobile;
+  $('mobile').value = mobiles[0].mobile;
 }
 
 function applyTemplate() {
@@ -76,7 +136,7 @@ function selectHotel(h) {
   selectedHotel = h;
   $('selectedHotel').classList.remove('empty');
   $('selectedHotel').innerHTML = `<b>${h.name}</b><br>شهر: ${h.city || '-'} | کد هتل: ${h.hotelCode || '-'}<br>تلفن رزرو: ${h.reservePhone || '-'}<br>تلفن هتل: ${h.hotelPhone || '-'}`;
-  $('mobile').value = normalizeMobile(h.reservePhone) || normalizeMobile(h.hotelPhone);
+  renderMobileOptions(h);
   applyTemplate();
   renderHotels();
 }
@@ -153,6 +213,11 @@ $('search').addEventListener('input', renderHotels);
 $('cityFilter').addEventListener('change', () => { $('selectedCity').textContent = $('cityFilter').value || 'همه شهرها'; renderHotels(); });
 $('clearBtn').addEventListener('click', () => { $('search').value=''; $('cityFilter').value=''; $('selectedCity').textContent='همه شهرها'; renderHotels(); });
 $('templateSelect').addEventListener('change', applyTemplate);
+$('mobileSelect').addEventListener('change', () => {
+  const value = $('mobileSelect').value;
+  if (value && value !== 'manual') $('mobile').value = value;
+  if (value === 'manual') $('mobile').focus();
+});
 $('sendSms').addEventListener('click', sendSms);
 $('copyText').addEventListener('click', async () => { await navigator.clipboard.writeText($('message').value); setStatus('متن پیام کپی شد.'); addLog('Copy', 'کپی متن'); });
 $('whatsappBtn').addEventListener('click', () => openChannel('whatsapp'));
